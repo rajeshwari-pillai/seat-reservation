@@ -1,6 +1,6 @@
-# Binaries
-server
-burst
+# Binaries (root level only)
+/server
+/burst
 *.exe
 
 # IDE
