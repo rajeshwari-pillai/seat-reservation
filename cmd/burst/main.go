@@ -139,15 +139,17 @@ func main() {
 	start := time.Now()
 
 	var (
-		confirmed       int64
-		seatTaken       int64
-		perUserLimitHit int64
+		confirmed          int64
+		idempotentReplay   int64
+		seatTaken          int64
+		perUserLimitHit    int64
 		idempotentConflict int64
-		serverErrors    int64
-		otherErrors     int64
-		networkErrors   int64
-		mu              sync.Mutex
-		statusCounts    = make(map[int]int)
+		serverErrors       int64
+		otherErrors        int64
+		networkErrors      int64
+		mu                 sync.Mutex
+		statusCounts       = make(map[int]int)
+		seenReservations   = make(map[string]bool)
 	)
 
 	var wg sync.WaitGroup
@@ -185,12 +187,19 @@ func main() {
 
 			switch resp.StatusCode {
 			case 201:
-				// Check if this was an idempotent replay or new confirmation
 				var respData map[string]interface{}
 				json.Unmarshal(respBody, &respData)
-				// Both new and replay return 201, we count replays by checking
-				// if the response is for a previously confirmed reservation
-				atomic.AddInt64(&confirmed, 1)
+				resID, _ := respData["reservation_id"].(string)
+
+				mu.Lock()
+				if seenReservations[resID] {
+					mu.Unlock()
+					atomic.AddInt64(&idempotentReplay, 1)
+				} else {
+					seenReservations[resID] = true
+					mu.Unlock()
+					atomic.AddInt64(&confirmed, 1)
+				}
 			case 409:
 				var errResp map[string]string
 				json.Unmarshal(respBody, &errResp)
@@ -219,7 +228,8 @@ func main() {
 
 	fmt.Printf("\n=== Results (%s) ===\n", duration.Round(time.Millisecond))
 	fmt.Printf("Total requests:        %d\n", len(requests))
-	fmt.Printf("Confirmed (201):       %d\n", confirmed)
+	fmt.Printf("Confirmed:             %d\n", confirmed)
+	fmt.Printf("Idempotent replay:     %d\n", idempotentReplay)
 	fmt.Printf("Seat taken (409):      %d\n", seatTaken)
 	fmt.Printf("Per-user limit (409):  %d\n", perUserLimitHit)
 	fmt.Printf("Idempotent conflict:   %d\n", idempotentConflict)
