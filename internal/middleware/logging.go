@@ -70,14 +70,17 @@ func Logging(next http.Handler) http.Handler {
 			userID = rf.UserID
 		}
 
-		slog.Info("request",
+		attrs := []any{
 			"method", r.Method,
 			"path", r.URL.Path,
 			"status", rw.status,
 			"duration_ms", time.Since(start).Milliseconds(),
 			"request_id", reqID,
-			"user_id", userID,
 			"remote_addr", r.RemoteAddr,
-		)
+		}
+		if userID != "" {
+			attrs = append(attrs, "user_id", userID)
+		}
+		slog.Info("request", attrs...)
 	})
 }
