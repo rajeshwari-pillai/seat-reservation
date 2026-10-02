@@ -73,6 +73,21 @@ func main() {
 	r.Use(middleware.Logging)
 	r.Use(handler.MetricsMiddleware)
 
+	// Root endpoint
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"service":"seat-reservation","status":"running","endpoints":{`+
+			`"POST /auth/token":"generate auth token",`+
+			`"POST /shows":"create a show (admin)",`+
+			`"GET /shows/{id}":"get show with seat status",`+
+			`"POST /shows/{id}/reserve":"reserve seat(s)",`+
+			`"POST /reservations/{id}/cancel":"cancel a reservation",`+
+			`"GET /health/live":"liveness check",`+
+			`"GET /health/ready":"readiness check (verifies DB)",`+
+			`"GET /metrics":"prometheus metrics"}}`)
+	})
+
 	// Health endpoints (no auth)
 	r.Get("/health/live", h.Liveness)
 	r.Get("/health/ready", h.Readiness)
