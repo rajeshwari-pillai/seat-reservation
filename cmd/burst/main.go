@@ -12,6 +12,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/rajeshwari/seat-reservation/internal/middleware"
 )
 
 const (
@@ -47,9 +49,9 @@ func main() {
 		},
 	}
 
-	// Step 1: Get admin token
+	// Step 1: Get admin token (generated locally — same signing key)
 	fmt.Println("[1/5] Getting admin token...")
-	adminToken := getToken(client, baseURL, "admin-user", "admin")
+	adminToken, _ := middleware.GenerateToken("admin-user", "admin")
 
 	// Step 2: Create show with seats
 	fmt.Println("[2/5] Creating show...")
@@ -63,11 +65,11 @@ func main() {
 	showID := createShow(client, baseURL, adminToken, seatLabels)
 	fmt.Printf("   Show created: %s (%d seats)\n", showID, totalSeats)
 
-	// Step 3: Generate user tokens
+	// Step 3: Generate user tokens (locally — same signing key, instant)
 	fmt.Println("[3/5] Generating user tokens...")
 	userTokens := make([]string, numUsers)
 	for i := 0; i < numUsers; i++ {
-		userTokens[i] = getToken(client, baseURL, fmt.Sprintf("user-%d", i), "user")
+		userTokens[i], _ = middleware.GenerateToken(fmt.Sprintf("user-%d", i), "user")
 	}
 
 	// Step 4: Build requests
@@ -343,18 +345,6 @@ func main() {
 	}
 }
 
-func getToken(client *http.Client, baseURL, userID, role string) string {
-	body, _ := json.Marshal(map[string]string{"user_id": userID, "role": role})
-	resp, err := client.Post(baseURL+"/auth/token", "application/json", bytes.NewReader(body))
-	if err != nil {
-		fmt.Printf("ERROR getting token: %v\n", err)
-		os.Exit(1)
-	}
-	defer resp.Body.Close()
-	var result map[string]string
-	json.NewDecoder(resp.Body).Decode(&result)
-	return result["token"]
-}
 
 func createShow(client *http.Client, baseURL, token string, seats []string) string {
 	body, _ := json.Marshal(map[string]interface{}{
