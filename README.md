@@ -136,6 +136,7 @@ Burst test output, live metrics snapshot, and sample structured logs are saved i
 **Live access:**
 - Metrics: `GET https://seat-reservation-j4aj.onrender.com/metrics`
 - Render dashboard logs: visible in the Render dashboard under the service's **Logs** tab
+- Screen recording of live logs under load: [logs_under_load.mov](https://github.com/rajeshwari-pillai/seat-reservation/releases/tag/v1.0.0)
 
 ## Environment Variables
 
