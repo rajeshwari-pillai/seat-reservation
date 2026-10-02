@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	numUsers       = 2000  // number of distinct users
-	hotSeats       = 8     // number of "hot" seats everyone fights over
+	numUsers       = 10000 // number of distinct buyers
+	hotSeats       = 5     // number of "hot" seats everyone fights over
 	totalSeats     = 200   // total seats in the show
 	perUserLimit   = 4
 	retryDuplicates = true // some users retry with same idempotency key
@@ -82,9 +82,24 @@ func main() {
 
 	var requests []request
 
-	// Hot seat storm: all users try for the first N hot seats
+	// Hot seat storm: all 10,000 users fight over the same hot seat (A1)
+	// This is the "500 people grab seat A12" scenario but 10x harder
 	for i := 0; i < numUsers; i++ {
-		for j := 0; j < hotSeats; j++ {
+		key := fmt.Sprintf("user-%d-hot-%s", i, seatLabels[0])
+		requests = append(requests, request{
+			userIdx:        i,
+			token:          userTokens[i],
+			seats:          []string{seatLabels[0]},
+			idempotencyKey: key,
+		})
+	}
+
+	// Additional hot seats: 5000 users fight over seats 2-5
+	for i := 0; i < 5000; i++ {
+		for j := 1; j < hotSeats; j++ {
+			if len(requests) >= 16000 {
+				break
+			}
 			key := fmt.Sprintf("user-%d-hot-%s", i, seatLabels[j])
 			requests = append(requests, request{
 				userIdx:        i,
@@ -114,7 +129,7 @@ func main() {
 		requests = append(requests, request{
 			userIdx:        idx,
 			token:          userTokens[idx],
-			seats:          []string{seatLabels[hotSeats]}, // different seat, same key
+			seats:          []string{seatLabels[hotSeats]},
 			idempotencyKey: key,
 		})
 	}
