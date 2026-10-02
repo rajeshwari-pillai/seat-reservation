@@ -101,6 +101,12 @@ func Auth(next http.Handler) http.Handler {
 
 		ctx := context.WithValue(r.Context(), UserIDKey, payload.Sub)
 		ctx = context.WithValue(ctx, RoleKey, payload.Role)
+
+		// Write user_id to shared mutable fields so Logging middleware can read it
+		if rf := GetRequestFields(ctx); rf != nil {
+			rf.UserID = payload.Sub
+		}
+
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
