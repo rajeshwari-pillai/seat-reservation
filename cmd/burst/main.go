@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	numUsers       = 500   // number of distinct users
-	hotSeats       = 5     // number of "hot" seats everyone fights over
-	totalSeats     = 100   // total seats in the show
+	numUsers       = 2000  // number of distinct users
+	hotSeats       = 8     // number of "hot" seats everyone fights over
+	totalSeats     = 200   // total seats in the show
 	perUserLimit   = 4
 	retryDuplicates = true // some users retry with same idempotency key
 )
@@ -95,8 +95,8 @@ func main() {
 		}
 	}
 
-	// Some idempotent retries (same key, same seats)
-	for i := 0; i < 200; i++ {
+	// Idempotent retries: same key, same seats (should return original reservation)
+	for i := 0; i < 2000; i++ {
 		idx := i % numUsers
 		key := fmt.Sprintf("user-%d-hot-%s", idx, seatLabels[0])
 		requests = append(requests, request{
@@ -107,8 +107,8 @@ func main() {
 		})
 	}
 
-	// Some idempotent conflicts (same key, different seats)
-	for i := 0; i < 50; i++ {
+	// Idempotent conflicts: same key, different seats (should be rejected 409)
+	for i := 0; i < 500; i++ {
 		idx := i % numUsers
 		key := fmt.Sprintf("user-%d-hot-%s", idx, seatLabels[0])
 		requests = append(requests, request{
@@ -119,17 +119,17 @@ func main() {
 		})
 	}
 
-	// Per-user limit test: some users try to book many seats
-	for i := 0; i < 20; i++ {
-		for j := hotSeats; j < hotSeats+perUserLimit+3; j++ {
-			key := fmt.Sprintf("user-%d-spread-%s", i, seatLabels[j])
-			requests = append(requests, request{
-				userIdx:        i,
-				token:          userTokens[i],
-				seats:          []string{seatLabels[j]},
-				idempotencyKey: key,
-			})
-		}
+	// Per-user limit test: users try to exceed the 4-seat limit
+	for i := 0; len(requests) < 20000; i++ {
+		idx := i % numUsers
+		seatIdx := hotSeats + (i % (totalSeats - hotSeats))
+		key := fmt.Sprintf("user-%d-spread-%s-%d", idx, seatLabels[seatIdx], i)
+		requests = append(requests, request{
+			userIdx:        idx,
+			token:          userTokens[idx],
+			seats:          []string{seatLabels[seatIdx]},
+			idempotencyKey: key,
+		})
 	}
 
 	fmt.Printf("   Total requests to fire: %d\n", len(requests))
