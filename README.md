@@ -88,7 +88,7 @@ Run the on-sale stampede simulation:
 ./burst.sh http://localhost:8080
 
 # Against deployed URL
-./burst.sh https://your-app.onrender.com
+./burst.sh https://seat-reservation-j4aj.onrender.com
 ```
 
 This fires ~3000+ concurrent requests including:
@@ -120,6 +120,22 @@ Prints outcome distribution and reconciliation check.
 ### Structured Logs
 
 JSON-structured logs with request ID, user ID, method, path, status, and duration for every request.
+
+```json
+{"time":"...","level":"INFO","msg":"request","method":"POST","path":"/shows/.../reserve","status":201,"duration_ms":8,"request_id":"c3d4e5f6-...","user_id":"user-0","remote_addr":"1.2.3.4:12346"}
+{"time":"...","level":"INFO","msg":"request","method":"POST","path":"/shows/.../reserve","status":409,"duration_ms":5,"request_id":"d4e5f6a7-...","user_id":"user-1","remote_addr":"1.2.3.4:12347"}
+```
+
+### Log & Metrics Evidence
+
+Burst test output, live metrics snapshot, and sample structured logs are saved in the [`evidence/`](evidence/) directory:
+- `burst_output.txt` — full burst test results against the live Render URL (2890 requests, 0 errors)
+- `metrics_snapshot.txt` — Prometheus metrics captured after the burst
+- `sample_logs.jsonl` — structured JSON log samples showing request correlation
+
+**Live access:**
+- Metrics: `GET https://seat-reservation-j4aj.onrender.com/metrics`
+- Render dashboard logs: visible in the Render dashboard under the service's **Logs** tab
 
 ## Environment Variables
 

@@ -1,0 +1,36 @@
+=== Seat Reservation Burst Test ===
+Target: https://seat-reservation-j4aj.onrender.com
+Users: 500 | Hot seats: 5 | Total seats: 100
+
+[1/5] Getting admin token...
+[2/5] Creating show...
+   Show created: 6390cbf2-5dcc-45de-8757-7268cef09934 (100 seats)
+[3/5] Generating user tokens...
+[4/5] Building burst requests...
+   Total requests to fire: 2890
+[5/5] Firing burst...
+
+=== Results (32.768s) ===
+Total requests:        2890
+Confirmed (201):       13
+Seat taken (409):      2860
+Per-user limit (409):  0
+Idempotent conflict:   17
+Server errors (5xx):   0
+Network errors:        0
+Other:                 0
+
+Status code distribution:
+  201: 13
+  409: 2877
+
+=== Reconciliation Check ===
+Available: 88
+Confirmed: 12
+Total:     100
+Invariant (available + confirmed == total): true
+Double-sells detected: 0
+Per-user limit violations: 0
+
+=== VERDICT ===
+PASS: All correctness checks passed!
